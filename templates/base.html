@@ -128,25 +128,25 @@
                 alert('Digite um título para o prompt.');
                 return;
             }
-            if (!window.currentPromptId) {
-                alert('Gere um prompt primeiro.');
-                return;
-            }
-            fetch(`/load_prompt/${window.currentPromptId}`)
-                .then(response => response.json())
-                .then(data => {
-                    return fetch('/save_prompt', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: titulo, data: data })
-                    });
-                })
-                .then(response => response.json())
-                .then(result => {
-                    alert('Prompt salvo com sucesso!');
-                    loadSavedPrompts();
-                })
-                .catch(error => console.error('Erro ao salvar:', error));
+            // Get current form data
+            const formData = new FormData(document.getElementById('promptForm'));
+            const data = Object.fromEntries(formData);
+            // Handle multiple selects
+            const multipleFields = ['ferramentas_externas', 'metricas', 'integracao_multimodal', 'testes', 'integracao_ci_cd'];
+            multipleFields.forEach(field => {
+                data[field] = formData.getAll(field);
+            });
+            fetch('/save_prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: titulo, data: data })
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert('Prompt salvo com sucesso!');
+                loadSavedPrompts();
+            })
+            .catch(error => console.error('Erro ao salvar:', error));
         }
 
         function loadSelectedPrompt() {
