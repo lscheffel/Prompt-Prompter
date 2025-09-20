@@ -2,8 +2,10 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 import json
 import os
-from models import db, init_db, Prompt
+from models import db, init_db, Prompt, SavedPrompt
 from dotenv import load_dotenv
+from docx import Document
+from openpyxl import Workbook
 
 load_dotenv()
 
@@ -69,7 +71,8 @@ def gerar_prompt():
         "versionamento": data.get('versionamento'),
         "estrutura_projeto": data.get('estrutura_projeto'),
         "padroes_codigo": data.get('padroes_codigo'),
-        "integracao_ci_cd": json.loads(data.get('integracao_ci_cd'))
+        "integracao_ci_cd": json.loads(data.get('integracao_ci_cd')),
+        "estilo_saida": data.get('estilo_saida')
     }
 
     # Filter out empty values
@@ -139,7 +142,8 @@ def download(prompt_id, format):
         "versionamento": prompt.versionamento,
         "estrutura_projeto": prompt.estrutura_projeto,
         "padroes_codigo": prompt.padroes_codigo,
-        "integracao_ci_cd": json.loads(prompt.integracao_ci_cd) if prompt.integracao_ci_cd else []
+        "integracao_ci_cd": json.loads(prompt.integracao_ci_cd) if prompt.integracao_ci_cd else [],
+        "estilo_saida": prompt.estilo_saida
     }
 
     # Filter out empty values
@@ -166,6 +170,55 @@ def download(prompt_id, format):
         with open(filename, 'w') as f:
             f.write(json.dumps(filtered_data, indent=2))
         return send_file(filename, as_attachment=True)
+    elif format == 'css':
+        filename = f'prompt_{prompt_id}.css'
+        with open(filename, 'w') as f:
+            f.write("/* Generated CSS */\n")
+            f.write(json.dumps(filtered_data, indent=2))
+        return send_file(filename, as_attachment=True)
+    elif format == 'docx':
+        filename = f'prompt_{prompt_id}.docx'
+        doc = Document()
+        doc.add_heading('Prompt Data', 0)
+        for key, value in filtered_data.items():
+            doc.add_paragraph(f'{key}: {value}')
+        doc.save(filename)
+        return send_file(filename, as_attachment=True)
+    elif format == 'xlsx':
+        filename = f'prompt_{prompt_id}.xlsx'
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Prompt Data"
+        row = 1
+        for key, value in filtered_data.items():
+            ws.cell(row=row, column=1, value=key)
+            ws.cell(row=row, column=2, value=str(value))
+            row += 1
+        wb.save(filename)
+        return send_file(filename, as_attachment=True)
+
+@app.route('/save_prompt', methods=['POST'])
+def save_prompt():
+    data = request.get_json()
+    name = data.get('name')
+    prompt_data = data.get('data')
+    if not name or not prompt_data:
+        return jsonify({"error": "Nome e dados são obrigatórios"}), 400
+    saved = SavedPrompt(name=name, data=json.dumps(prompt_data))
+    db.session.add(saved)
+    db.session.commit()
+    return jsonify({"id": saved.id, "name": saved.name})
+
+@app.route('/load_prompts')
+def load_prompts():
+    prompts = SavedPrompt.query.all()
+    result = [{"id": p.id, "name": p.name} for p in prompts]
+    return jsonify(result)
+
+@app.route('/load_prompt/<int:prompt_id>')
+def load_prompt(prompt_id):
+    prompt = SavedPrompt.query.get_or_404(prompt_id)
+    return jsonify(json.loads(prompt.data))
 
 if __name__ == '__main__':
     init_db(app)

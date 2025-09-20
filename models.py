@@ -39,6 +39,13 @@ class Prompt(db.Model):
     estrutura_projeto = db.Column(db.Text)
     padroes_codigo = db.Column(db.String(50))
     integracao_ci_cd = db.Column(db.Text)  # JSON string
+    estilo_saida = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class SavedPrompt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    data = db.Column(db.Text, nullable=False)  # JSON string
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 def init_db(app):

@@ -176,17 +176,40 @@
             </div>
         </div>
         <!-- Continue with remaining fields -->
-        <div class="mb-3">
-            <label for="formato_saida" class="form-label">Formato de Saída</label>
-            <select class="form-select" id="formato_saida" name="formato_saida">
-                <option value="">Selecione ou deixe em branco</option>
-                <option value="Código Python">Código Python</option>
-                <option value="Documentação Markdown">Documentação Markdown</option>
-                <option value="JSON">JSON</option>
-                <option value="HTML">HTML</option>
-                <option value="CSV">CSV</option>
-                <option value="Relatório PDF">Relatório PDF</option>
-            </select>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="formato_saida" class="form-label">Formato de Saída</label>
+                    <select class="form-select" id="formato_saida" name="formato_saida">
+                        <option value="">Selecione ou deixe em branco</option>
+                        <option value="Código Python">Código Python</option>
+                        <option value="Documentação Markdown">Documentação Markdown</option>
+                        <option value="JSON">JSON</option>
+                        <option value="HTML">HTML</option>
+                        <option value="TXT">TXT</option>
+                        <option value="DOCX">DOCX</option>
+                        <option value="CSS">CSS</option>
+                        <option value="XLSX">XLSX</option>
+                        <option value="CSV">CSV</option>
+                        <option value="Relatório PDF">Relatório PDF</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="estilo_saida" class="form-label">Estilo de Saída</label>
+                    <select class="form-select" id="estilo_saida" name="estilo_saida">
+                        <option value="">Selecione ou deixe em branco</option>
+                        <option value="Preto e Branco">Preto e Branco</option>
+                        <option value="Colorido Moderno">Colorido Moderno</option>
+                        <option value="Minimalista">Minimalista</option>
+                        <option value="Clássico">Clássico</option>
+                        <option value="Escuro">Escuro</option>
+                        <option value="Pastel">Pastel</option>
+                        <option value="Corporativo">Corporativo</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="mb-3">
             <label for="prioridade" class="form-label">Prioridade</label>
@@ -308,6 +331,24 @@
         </div>
         <button type="submit" class="btn btn-primary">Gerar Prompt</button>
     </form>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="loadPrompt" class="form-label">Carregar Prompt Salvo</label>
+                <select class="form-select" id="loadPrompt">
+                    <option value="">Selecione um prompt salvo</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="saveName" class="form-label">Nome para Salvar</label>
+                <input type="text" class="form-control" id="saveName" placeholder="Digite um nome">
+                <button id="saveBtn" class="btn btn-success mt-2">Salvar Prompt</button>
+            </div>
+        </div>
+    </div>
+
     <div id="result" class="mt-5" style="display: none;">
         <h2>Resultado</h2>
         <pre id="jsonOutput"></pre>
@@ -425,6 +466,86 @@ document.getElementById('downloadTxtBtn').addEventListener('click', function() {
     } else {
         alert('Gere um prompt primeiro.');
     }
+});
+
+document.getElementById('saveBtn').addEventListener('click', function() {
+    const name = document.getElementById('saveName').value;
+    if (!name) {
+        alert('Digite um nome para salvar.');
+        return;
+    }
+    if (!currentPromptId) {
+        alert('Gere um prompt primeiro.');
+        return;
+    }
+    fetch(`/load_prompt/${currentPromptId}`)
+        .then(response => response.json())
+        .then(data => {
+            return fetch('/save_prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, data: data })
+            });
+        })
+        .then(response => response.json())
+        .then(result => {
+            alert('Prompt salvo com sucesso!');
+            loadSavedPrompts();
+        })
+        .catch(error => console.error('Erro ao salvar:', error));
+});
+
+document.getElementById('loadPrompt').addEventListener('change', function() {
+    const promptId = this.value;
+    if (promptId) {
+        fetch(`/load_prompt/${promptId}`)
+            .then(response => response.json())
+            .then(data => {
+                // Populate form with loaded data
+                Object.keys(data).forEach(key => {
+                    const element = document.getElementById(key) || document.querySelector(`[name="${key}"]`);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = data[key];
+                        } else if (element.tagName === 'SELECT' && element.multiple) {
+                            // Handle multiple select
+                            Array.from(element.options).forEach(option => {
+                                option.selected = data[key].includes(option.value);
+                            });
+                        } else {
+                            element.value = data[key];
+                        }
+                    }
+                });
+                // Update dependent dropdowns
+                populateSubtipo();
+                populateSubitem();
+            })
+            .catch(error => console.error('Erro ao carregar:', error));
+    }
+});
+
+function loadSavedPrompts() {
+    fetch('/load_prompts')
+        .then(response => response.json())
+        .then(prompts => {
+            const select = document.getElementById('loadPrompt');
+            select.innerHTML = '<option value="">Selecione um prompt salvo</option>';
+            prompts.forEach(prompt => {
+                const option = document.createElement('option');
+                option.value = prompt.id;
+                option.textContent = prompt.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erro ao carregar prompts salvos:', error));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    populateTipo();
+    document.getElementById('tipo').addEventListener('change', populateSubtipo);
+    document.getElementById('subtipo').addEventListener('change', populateSubitem);
+    loadSavedPrompts();
 });
 </script>
 {% endblock %}

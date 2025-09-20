@@ -1,0 +1,15 @@
+{
+  "titulo": "receita com banana",
+  "tipo": "Gera\u00e7\u00e3o de Conte\u00fado",
+  "subtipo": "Receitas Culin\u00e1rias",
+  "tom_estilo": "T\u00e9cnico",
+  "objetivos": "criar 5 receitas de sobremesas a base de banana",
+  "regras": "sobremesas servidas geladas, sobremesa de ver\u00e3o",
+  "contexto": "servirei um jantar de alta gastronomia",
+  "restricoes": "gl\u00faten",
+  "nivel_detalhe": "Detalhado",
+  "formato_saida": "Documenta\u00e7\u00e3o Markdown",
+  "prioridade": "Legibilidade",
+  "idioma": "Portugu\u00eas",
+  "nivel_criatividade": 50
+}
