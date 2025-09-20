@@ -364,6 +364,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('subtipo').addEventListener('change', populateSubitem);
 });
 
+let currentPromptId = null;
+
 document.getElementById('promptForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -379,7 +381,8 @@ document.getElementById('promptForm').addEventListener('submit', async function(
         body: JSON.stringify(data)
     });
     const result = await response.json();
-    document.getElementById('jsonOutput').textContent = JSON.stringify(result, null, 2);
+    currentPromptId = result.id;
+    document.getElementById('jsonOutput').textContent = JSON.stringify(result.data, null, 2);
     document.getElementById('result').style.display = 'block';
 });
 
@@ -390,12 +393,19 @@ document.getElementById('copyBtn').addEventListener('click', function() {
 });
 
 document.getElementById('downloadJsonBtn').addEventListener('click', function() {
-    // Assume prompt_id is 1 for now
-    window.location.href = '/download/1/json';
+    if (currentPromptId) {
+        window.location.href = `/download/${currentPromptId}/json`;
+    } else {
+        alert('Gere um prompt primeiro.');
+    }
 });
 
 document.getElementById('downloadTxtBtn').addEventListener('click', function() {
-    window.location.href = '/download/1/txt';
+    if (currentPromptId) {
+        window.location.href = `/download/${currentPromptId}/txt`;
+    } else {
+        alert('Gere um prompt primeiro.');
+    }
 });
 </script>
 {% endblock %}

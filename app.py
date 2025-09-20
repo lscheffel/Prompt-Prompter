@@ -96,7 +96,7 @@ def gerar_prompt():
     prompt = Prompt(**data)
     db.session.add(prompt)
     db.session.commit()
-    return jsonify(prompt_json)
+    return jsonify({"id": prompt.id, "data": prompt_json})
 
 @app.route('/download/<int:prompt_id>/<format>')
 def download(prompt_id, format):
