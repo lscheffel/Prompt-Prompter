@@ -10,18 +10,14 @@
             <div class="col-md-6">
                 <div class="mb-3">
                     <label for="titulo" class="form-label">Título</label>
-                    <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Nome do prompt" required>
+                    <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Nome do prompt">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="mb-3">
                     <label for="tipo" class="form-label">Tipo</label>
-                    <select class="form-select" id="tipo" name="tipo" required>
-                        <option value="">Selecione</option>
-                        <option value="Geração de Conteúdo">Geração de Conteúdo</option>
-                        <option value="Automação">Automação</option>
-                        <option value="Análise">Análise</option>
-                        <option value="Outros">Outros</option>
+                    <select class="form-select" id="tipo" name="tipo">
+                        <option value="">Selecione ou deixe em branco</option>
                     </select>
                 </div>
             </div>
@@ -32,7 +28,7 @@
                 <div class="mb-3">
                     <label for="subtipo" class="form-label">Subtipo</label>
                     <select class="form-select" id="subtipo" name="subtipo">
-                        <option value="">Selecione</option>
+                        <option value="">Selecione ou deixe em branco</option>
                     </select>
                 </div>
             </div>
@@ -40,7 +36,7 @@
                 <div class="mb-3">
                     <label for="subitem" class="form-label">Subitem</label>
                     <select class="form-select" id="subitem" name="subitem">
-                        <option value="">Selecione</option>
+                        <option value="">Selecione ou deixe em branco</option>
                     </select>
                 </div>
             </div>
@@ -48,6 +44,7 @@
                 <div class="mb-3">
                     <label for="tom_estilo" class="form-label">Tom e Estilo</label>
                     <select class="form-select" id="tom_estilo" name="tom_estilo">
+                        <option value="">Selecione ou deixe em branco</option>
                         <option value="Técnico">Técnico</option>
                         <option value="Formal">Formal</option>
                         <option value="Casual">Casual</option>
@@ -304,6 +301,69 @@
 
 {% block scripts %}
 <script>
+const cats = JSON.parse('{{ cats_json }}');
+
+function populateTipo() {
+    const tipoSelect = document.getElementById('tipo');
+    tipoSelect.innerHTML = '<option value="">Selecione ou deixe em branco</option>';
+    if (cats['Tarefa/Comando']) {
+        Object.keys(cats['Tarefa/Comando']).forEach(key => {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = key;
+            tipoSelect.appendChild(option);
+        });
+    }
+}
+
+function populateSubtipo() {
+    const tipo = document.getElementById('tipo').value;
+    const subtipoSelect = document.getElementById('subtipo');
+    subtipoSelect.innerHTML = '<option value="">Selecione ou deixe em branco</option>';
+    if (tipo && cats['Tarefa/Comando'][tipo]) {
+        const subtipoData = cats['Tarefa/Comando'][tipo];
+        if (Array.isArray(subtipoData)) {
+            subtipoData.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                subtipoSelect.appendChild(option);
+            });
+        } else {
+            Object.keys(subtipoData).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                subtipoSelect.appendChild(option);
+            });
+        }
+    }
+}
+
+function populateSubitem() {
+    const tipo = document.getElementById('tipo').value;
+    const subtipo = document.getElementById('subtipo').value;
+    const subitemSelect = document.getElementById('subitem');
+    subitemSelect.innerHTML = '<option value="">Selecione ou deixe em branco</option>';
+    if (tipo && subtipo && cats['Tarefa/Comando'][tipo] && cats['Tarefa/Comando'][tipo][subtipo]) {
+        const subitemData = cats['Tarefa/Comando'][tipo][subtipo];
+        if (Array.isArray(subitemData)) {
+            subitemData.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                subitemSelect.appendChild(option);
+            });
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    populateTipo();
+    document.getElementById('tipo').addEventListener('change', populateSubtipo);
+    document.getElementById('subtipo').addEventListener('change', populateSubitem);
+});
+
 document.getElementById('promptForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(e.target);

@@ -16,7 +16,10 @@ db.init_app(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    with open('cats.json', 'r', encoding='utf-8') as f:
+        cats = json.load(f)
+    cats_json = json.dumps(cats)
+    return render_template('index.html', cats_json=cats_json)
 
 @app.route('/gerar_prompt', methods=['POST'])
 def gerar_prompt():
