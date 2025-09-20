@@ -47,6 +47,14 @@
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="#">Project Prompt Prompter</a>
+            <div class="d-flex">
+                <select class="form-select me-2" id="loadPrompt" style="width: 200px;">
+                    <option value="">Carregar Prompt Salvo</option>
+                </select>
+                <button id="saveBtn" class="btn btn-success me-2">Salvar Prompt</button>
+                <button id="renameBtn" class="btn btn-warning me-2" style="display: none;">Renomear</button>
+                <button id="deleteBtn" class="btn btn-danger" style="display: none;">Excluir</button>
+            </div>
         </div>
     </nav>
 
@@ -73,6 +81,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let currentPromptId = null;
+        let selectedSavedPromptId = null;
+
         window.onscroll = function() {
             var button = document.getElementById("back-to-top");
             if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
@@ -85,6 +96,132 @@
         function scrollToTop() {
             document.body.scrollTop = 0;
             document.documentElement.scrollTop = 0;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedPrompts();
+            document.getElementById('saveBtn').addEventListener('click', savePrompt);
+            document.getElementById('renameBtn').addEventListener('click', renamePrompt);
+            document.getElementById('deleteBtn').addEventListener('click', deletePrompt);
+            document.getElementById('loadPrompt').addEventListener('change', loadSelectedPrompt);
+        });
+
+        function loadSavedPrompts() {
+            fetch('/load_prompts')
+                .then(response => response.json())
+                .then(prompts => {
+                    const select = document.getElementById('loadPrompt');
+                    select.innerHTML = '<option value="">Carregar Prompt Salvo</option>';
+                    prompts.forEach(prompt => {
+                        const option = document.createElement('option');
+                        option.value = prompt.id;
+                        option.textContent = prompt.name;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar prompts salvos:', error));
+        }
+
+        function savePrompt() {
+            const titulo = document.getElementById('titulo')?.value;
+            if (!titulo) {
+                alert('Digite um título para o prompt.');
+                return;
+            }
+            if (!window.currentPromptId) {
+                alert('Gere um prompt primeiro.');
+                return;
+            }
+            fetch(`/load_prompt/${window.currentPromptId}`)
+                .then(response => response.json())
+                .then(data => {
+                    return fetch('/save_prompt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: titulo, data: data })
+                    });
+                })
+                .then(response => response.json())
+                .then(result => {
+                    alert('Prompt salvo com sucesso!');
+                    loadSavedPrompts();
+                })
+                .catch(error => console.error('Erro ao salvar:', error));
+        }
+
+        function loadSelectedPrompt() {
+            selectedSavedPromptId = this.value;
+            if (selectedSavedPromptId) {
+                document.getElementById('renameBtn').style.display = 'inline-block';
+                document.getElementById('deleteBtn').style.display = 'inline-block';
+                fetch(`/load_prompt/${selectedSavedPromptId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate form with loaded data
+                        Object.keys(data).forEach(key => {
+                            const element = document.getElementById(key) || document.querySelector(`[name="${key}"]`);
+                            if (element) {
+                                if (element.type === 'checkbox') {
+                                    element.checked = data[key];
+                                } else if (element.tagName === 'SELECT' && element.multiple) {
+                                    // Handle multiple select
+                                    Array.from(element.options).forEach(option => {
+                                        option.selected = data[key].includes(option.value);
+                                    });
+                                } else {
+                                    element.value = data[key];
+                                }
+                            }
+                        });
+                        // Update dependent dropdowns
+                        if (typeof populateSubtipo === 'function') populateSubtipo();
+                        if (typeof populateSubitem === 'function') populateSubitem();
+                    })
+                    .catch(error => console.error('Erro ao carregar:', error));
+            } else {
+                document.getElementById('renameBtn').style.display = 'none';
+                document.getElementById('deleteBtn').style.display = 'none';
+            }
+        }
+
+        function renamePrompt() {
+            if (!selectedSavedPromptId) return;
+            const newName = prompt('Digite o novo nome:');
+            if (newName) {
+                fetch(`/rename_prompt/${selectedSavedPromptId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Prompt renomeado com sucesso!');
+                        loadSavedPrompts();
+                    }
+                })
+                .catch(error => console.error('Erro ao renomear:', error));
+            }
+        }
+
+        function deletePrompt() {
+            if (!selectedSavedPromptId) return;
+            if (confirm('Tem certeza que deseja excluir este prompt?')) {
+                fetch(`/delete_prompt/${selectedSavedPromptId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Prompt excluído com sucesso!');
+                        loadSavedPrompts();
+                        document.getElementById('loadPrompt').value = '';
+                        document.getElementById('renameBtn').style.display = 'none';
+                        document.getElementById('deleteBtn').style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Erro ao excluir:', error));
+            }
         }
     </script>
     {% block scripts %}{% endblock %}
