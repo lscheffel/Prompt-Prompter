@@ -71,27 +71,31 @@ def gerar_prompt():
         "padroes_codigo": data.get('padroes_codigo'),
         "integracao_ci_cd": json.loads(data.get('integracao_ci_cd'))
     }
+
+    # Filter out empty values
+    def is_empty(value):
+        if value is None:
+            return True
+        if isinstance(value, str) and value.strip() == '':
+            return True
+        if isinstance(value, list) and len(value) == 0:
+            return True
+        if isinstance(value, bool) and not value:
+            return True
+        return False
+
+    filtered_json = {k: v for k, v in full_prompt_json.items() if not is_empty(v)}
+
     # Adjust based on nivel_detalhe
     nivel = data.get('nivel_detalhe')
     if nivel == 'Resumido':
-        prompt_json = {
-            "titulo": full_prompt_json["titulo"],
-            "tipo": full_prompt_json["tipo"],
-            "objetivos": full_prompt_json["objetivos"],
-            "formato_saida": full_prompt_json["formato_saida"]
-        }
+        required_keys = ["titulo", "tipo", "objetivos", "formato_saida"]
+        prompt_json = {k: filtered_json[k] for k in required_keys if k in filtered_json}
     elif nivel == 'Intermediário':
-        prompt_json = {
-            "titulo": full_prompt_json["titulo"],
-            "tipo": full_prompt_json["tipo"],
-            "subtipo": full_prompt_json["subtipo"],
-            "objetivos": full_prompt_json["objetivos"],
-            "regras": full_prompt_json["regras"],
-            "contexto": full_prompt_json["contexto"],
-            "formato_saida": full_prompt_json["formato_saida"]
-        }
+        required_keys = ["titulo", "tipo", "subtipo", "objetivos", "regras", "contexto", "formato_saida"]
+        prompt_json = {k: filtered_json[k] for k in required_keys if k in filtered_json}
     else:  # Detalhado
-        prompt_json = full_prompt_json
+        prompt_json = filtered_json
     # Save to DB
     prompt = Prompt(**data)
     db.session.add(prompt)
@@ -137,15 +141,30 @@ def download(prompt_id, format):
         "padroes_codigo": prompt.padroes_codigo,
         "integracao_ci_cd": json.loads(prompt.integracao_ci_cd) if prompt.integracao_ci_cd else []
     }
+
+    # Filter out empty values
+    def is_empty(value):
+        if value is None:
+            return True
+        if isinstance(value, str) and value.strip() == '':
+            return True
+        if isinstance(value, list) and len(value) == 0:
+            return True
+        if isinstance(value, bool) and not value:
+            return True
+        return False
+
+    filtered_data = {k: v for k, v in data.items() if not is_empty(v)}
+
     if format == 'json':
         filename = f'prompt_{prompt_id}.json'
         with open(filename, 'w') as f:
-            json.dump(data, f, indent=2)
+            json.dump(filtered_data, f, indent=2)
         return send_file(filename, as_attachment=True)
     elif format == 'txt':
         filename = f'prompt_{prompt_id}.txt'
         with open(filename, 'w') as f:
-            f.write(json.dumps(data, indent=2))
+            f.write(json.dumps(filtered_data, indent=2))
         return send_file(filename, as_attachment=True)
 
 if __name__ == '__main__':
