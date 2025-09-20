@@ -21,6 +21,16 @@ def index():
 @app.route('/gerar_prompt', methods=['POST'])
 def gerar_prompt():
     data = request.get_json()
+    # Convert data types
+    data['historico'] = data.get('historico') == 'on'
+    data['modo_iterativo'] = data.get('modo_iterativo') == 'on'
+    data['nivel_criatividade'] = int(data.get('nivel_criatividade', 50))
+    # Convert lists to JSON strings for storage
+    data['ferramentas_externas'] = json.dumps(data.get('ferramentas_externas', []))
+    data['metricas'] = json.dumps(data.get('metricas', []))
+    data['integracao_multimodal'] = json.dumps(data.get('integracao_multimodal', []))
+    data['testes'] = json.dumps(data.get('testes', []))
+    data['integracao_ci_cd'] = json.dumps(data.get('integracao_ci_cd', []))
     # Generate JSON based on data
     full_prompt_json = {
         "titulo": data.get('titulo'),
@@ -38,25 +48,25 @@ def gerar_prompt():
         "frontend": data.get('frontend'),
         "backend": data.get('backend'),
         "main_language": data.get('main_language'),
-        "ferramentas_externas": data.get('ferramentas_externas'),
+        "ferramentas_externas": json.loads(data.get('ferramentas_externas')),
         "nivel_detalhe": data.get('nivel_detalhe'),
         "publico_alvo": data.get('publico_alvo'),
         "formato_saida": data.get('formato_saida'),
         "prioridade": data.get('prioridade'),
         "metodo_raciocinio": data.get('metodo_raciocinio'),
         "idioma": data.get('idioma'),
-        "metricas": data.get('metricas'),
-        "integracao_multimodal": data.get('integracao_multimodal'),
+        "metricas": json.loads(data.get('metricas')),
+        "integracao_multimodal": json.loads(data.get('integracao_multimodal')),
         "historico": data.get('historico'),
         "modo_iterativo": data.get('modo_iterativo'),
         "nivel_criatividade": data.get('nivel_criatividade'),
         "dependencias": data.get('dependencias'),
         "ambiente_deploy": data.get('ambiente_deploy'),
-        "testes": data.get('testes'),
+        "testes": json.loads(data.get('testes')),
         "versionamento": data.get('versionamento'),
         "estrutura_projeto": data.get('estrutura_projeto'),
         "padroes_codigo": data.get('padroes_codigo'),
-        "integracao_ci_cd": data.get('integracao_ci_cd')
+        "integracao_ci_cd": json.loads(data.get('integracao_ci_cd'))
     }
     # Adjust based on nivel_detalhe
     nivel = data.get('nivel_detalhe')
@@ -80,7 +90,7 @@ def gerar_prompt():
     else:  # Detalhado
         prompt_json = full_prompt_json
     # Save to DB
-    prompt = Prompt(**full_prompt_json)
+    prompt = Prompt(**data)
     db.session.add(prompt)
     db.session.commit()
     return jsonify(prompt_json)
