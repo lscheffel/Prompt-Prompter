@@ -301,7 +301,7 @@
 
 {% block scripts %}
 <script>
-const cats = JSON.parse('{{ cats_json }}');
+const cats = JSON.parse('{{ cats_json | safe }}');
 
 function populateTipo() {
     const tipoSelect = document.getElementById('tipo');
