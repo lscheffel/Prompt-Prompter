@@ -1,0 +1,14 @@
+{
+  "titulo": "Endoflix",
+  "tipo": "Geração de Conteúdo",
+  "subtipo": "Desenvolvimento de Código",
+  "subitem": "Python",
+  "tom_estilo": "Técnico",
+  "persona": "Programador Especializado",
+  "objetivos": "Criar um app em Python para um sistema de streaming colaborativo com multiplayer de vídeo.",
+  "regras": "Usar apenas bibliotecas open-source. Seguir PEP8.",
+  "contexto": "Rodar em servidores AWS EC2 com Python 3.11 e banco SQLite.",
+  "restricoes": "Máximo 500 linhas de código, prazo 3 dias.",
+  "formato_saida": "Código Python",
+  "nivel_detalhe": "Detalhado"
+}

@@ -1,0 +1,140 @@
+from flask import Flask, render_template, request, jsonify, send_file
+from flask_cors import CORS
+import json
+import os
+from models import db, init_db, Prompt
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///prompts.db')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret')
+
+db.init_app(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/gerar_prompt', methods=['POST'])
+def gerar_prompt():
+    data = request.get_json()
+    # Generate JSON based on data
+    full_prompt_json = {
+        "titulo": data.get('titulo'),
+        "tipo": data.get('tipo'),
+        "subtipo": data.get('subtipo'),
+        "subitem": data.get('subitem'),
+        "tom_estilo": data.get('tom_estilo'),
+        "persona": data.get('persona'),
+        "objetivos": data.get('objetivos'),
+        "regras": data.get('regras'),
+        "contexto": data.get('contexto'),
+        "restricoes": data.get('restricoes'),
+        "exemplos": data.get('exemplos'),
+        "framework": data.get('framework'),
+        "frontend": data.get('frontend'),
+        "backend": data.get('backend'),
+        "main_language": data.get('main_language'),
+        "ferramentas_externas": data.get('ferramentas_externas'),
+        "nivel_detalhe": data.get('nivel_detalhe'),
+        "publico_alvo": data.get('publico_alvo'),
+        "formato_saida": data.get('formato_saida'),
+        "prioridade": data.get('prioridade'),
+        "metodo_raciocinio": data.get('metodo_raciocinio'),
+        "idioma": data.get('idioma'),
+        "metricas": data.get('metricas'),
+        "integracao_multimodal": data.get('integracao_multimodal'),
+        "historico": data.get('historico'),
+        "modo_iterativo": data.get('modo_iterativo'),
+        "nivel_criatividade": data.get('nivel_criatividade'),
+        "dependencias": data.get('dependencias'),
+        "ambiente_deploy": data.get('ambiente_deploy'),
+        "testes": data.get('testes'),
+        "versionamento": data.get('versionamento'),
+        "estrutura_projeto": data.get('estrutura_projeto'),
+        "padroes_codigo": data.get('padroes_codigo'),
+        "integracao_ci_cd": data.get('integracao_ci_cd')
+    }
+    # Adjust based on nivel_detalhe
+    nivel = data.get('nivel_detalhe')
+    if nivel == 'Resumido':
+        prompt_json = {
+            "titulo": full_prompt_json["titulo"],
+            "tipo": full_prompt_json["tipo"],
+            "objetivos": full_prompt_json["objetivos"],
+            "formato_saida": full_prompt_json["formato_saida"]
+        }
+    elif nivel == 'Intermediário':
+        prompt_json = {
+            "titulo": full_prompt_json["titulo"],
+            "tipo": full_prompt_json["tipo"],
+            "subtipo": full_prompt_json["subtipo"],
+            "objetivos": full_prompt_json["objetivos"],
+            "regras": full_prompt_json["regras"],
+            "contexto": full_prompt_json["contexto"],
+            "formato_saida": full_prompt_json["formato_saida"]
+        }
+    else:  # Detalhado
+        prompt_json = full_prompt_json
+    # Save to DB
+    prompt = Prompt(**full_prompt_json)
+    db.session.add(prompt)
+    db.session.commit()
+    return jsonify(prompt_json)
+
+@app.route('/download/<int:prompt_id>/<format>')
+def download(prompt_id, format):
+    prompt = Prompt.query.get_or_404(prompt_id)
+    data = {
+        "titulo": prompt.titulo,
+        "tipo": prompt.tipo,
+        "subtipo": prompt.subtipo,
+        "subitem": prompt.subitem,
+        "tom_estilo": prompt.tom_estilo,
+        "persona": prompt.persona,
+        "objetivos": prompt.objetivos,
+        "regras": prompt.regras,
+        "contexto": prompt.contexto,
+        "restricoes": prompt.restricoes,
+        "exemplos": prompt.exemplos,
+        "framework": prompt.framework,
+        "frontend": prompt.frontend,
+        "backend": prompt.backend,
+        "main_language": prompt.main_language,
+        "ferramentas_externas": json.loads(prompt.ferramentas_externas) if prompt.ferramentas_externas else [],
+        "nivel_detalhe": prompt.nivel_detalhe,
+        "publico_alvo": prompt.publico_alvo,
+        "formato_saida": prompt.formato_saida,
+        "prioridade": prompt.prioridade,
+        "metodo_raciocinio": prompt.metodo_raciocinio,
+        "idioma": prompt.idioma,
+        "metricas": json.loads(prompt.metricas) if prompt.metricas else [],
+        "integracao_multimodal": json.loads(prompt.integracao_multimodal) if prompt.integracao_multimodal else [],
+        "historico": prompt.historico,
+        "modo_iterativo": prompt.modo_iterativo,
+        "nivel_criatividade": prompt.nivel_criatividade,
+        "dependencias": prompt.dependencias,
+        "ambiente_deploy": prompt.ambiente_deploy,
+        "testes": json.loads(prompt.testes) if prompt.testes else [],
+        "versionamento": prompt.versionamento,
+        "estrutura_projeto": prompt.estrutura_projeto,
+        "padroes_codigo": prompt.padroes_codigo,
+        "integracao_ci_cd": json.loads(prompt.integracao_ci_cd) if prompt.integracao_ci_cd else []
+    }
+    if format == 'json':
+        filename = f'prompt_{prompt_id}.json'
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=2)
+        return send_file(filename, as_attachment=True)
+    elif format == 'txt':
+        filename = f'prompt_{prompt_id}.txt'
+        with open(filename, 'w') as f:
+            f.write(json.dumps(data, indent=2))
+        return send_file(filename, as_attachment=True)
+
+if __name__ == '__main__':
+    init_db(app)
+    app.run(debug=True)
