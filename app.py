@@ -220,6 +220,24 @@ def load_prompt(prompt_id):
     prompt = SavedPrompt.query.get_or_404(prompt_id)
     return jsonify(json.loads(prompt.data))
 
+@app.route('/rename_prompt/<int:prompt_id>', methods=['POST'])
+def rename_prompt(prompt_id):
+    data = request.get_json()
+    new_name = data.get('name')
+    if not new_name:
+        return jsonify({"error": "Nome é obrigatório"}), 400
+    prompt = SavedPrompt.query.get_or_404(prompt_id)
+    prompt.name = new_name
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/delete_prompt/<int:prompt_id>', methods=['DELETE'])
+def delete_prompt(prompt_id):
+    prompt = SavedPrompt.query.get_or_404(prompt_id)
+    db.session.delete(prompt)
+    db.session.commit()
+    return jsonify({"success": True})
+
 if __name__ == '__main__':
     init_db(app)
     app.run(debug=True)
