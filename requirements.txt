@@ -1,0 +1,10 @@
+# Requisitos do Project Prompt Prompter
+
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.5
+Flask-Cors==3.0.10
+pyqt6==6.6.1
+
+# Utilitários adicionais
+requests==2.31.0
+python-dotenv==1.0.0
